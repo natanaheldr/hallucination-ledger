@@ -36,6 +36,12 @@ def add_response_page(request: Request):
     return templates.TemplateResponse("add_response.html", {"request": request})
 
 
+@app.get("/api/seed-demo")
+def seed_demo():
+    from app.seed_demo import seed_demo_data
+    return seed_demo_data()
+
+
 @app.get("/claims/{claim_id}", response_class=HTMLResponse)
 def claim_detail_page(claim_id: int, request: Request):
     return templates.TemplateResponse("claim_detail.html", {"request": request, "claim_id": claim_id})
