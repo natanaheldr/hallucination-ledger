@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hallucination Ledger — {% block title %}Dashboard{% endblock %}</title>
+    <title>{% block title %}Dashboard{% endblock %} — Hallucination Ledger</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-shell">
@@ -19,7 +19,7 @@
                 </a>
                 <div class="nav-links">
                     <a href="/" class="nav-link">Dashboard</a>
-                    <a href="/add" class="nav-link nav-link-accent">+ New Response</a>
+                    <a href="/add" class="nav-link nav-link-accent">+ Analyze Response</a>
                 </div>
             </div>
         </nav>
@@ -27,13 +27,37 @@
             {% block content %}{% endblock %}
         </main>
         <footer class="footer">
-            <span>Day 002 — AI Safety Toolkit</span>
-            <span class="footer-dot">·</span>
-            <span>v0.1.0</span>
+            <span>AI Safety &mdash; Day 002</span>
+            <span class="footer-dot">&middot;</span>
+            <span>Open Source Toolkit</span>
         </footer>
     </div>
+    <div id="toast-container"></div>
     <script>
         const API_BASE = '/api';
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = '') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>

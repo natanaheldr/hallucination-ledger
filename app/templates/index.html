@@ -4,7 +4,7 @@
 <div class="dashboard">
     <div class="page-header">
         <h1 class="page-title">Claim Ledger</h1>
-        <p class="page-subtitle">Track and verify factual claims from AI-generated text</p>
+        <p class="page-subtitle">Track, verify, and analyze factual claims extracted from AI model outputs</p>
     </div>
 
     <div class="stats-grid" id="stats-cards">
@@ -22,7 +22,7 @@
         </div>
         <div class="stat-card stat-false">
             <div class="stat-number" id="stat-false">—</div>
-            <div class="stat-label">False</div>
+            <div class="stat-label">Hallucinations</div>
         </div>
         <div class="stat-card stat-unreviewed">
             <div class="stat-number" id="stat-unreviewed">—</div>
@@ -31,51 +31,69 @@
     </div>
 
     <div class="model-stats" id="model-stats" style="display:none;">
-        <h2 class="section-title">By Model</h2>
+        <h2 class="section-title">Performance by AI Model</h2>
         <div class="model-stats-grid" id="model-stats-grid"></div>
     </div>
 
     <div class="controls-bar">
         <div class="controls-row">
-            <input type="text" id="search-input" class="search-input" placeholder="Search claims...">
+            <input type="text" id="search-input" class="search-input" placeholder="Search through all claims...">
             <select id="status-filter" class="filter-select">
                 <option value="">All Statuses</option>
                 <option value="verified">Verified</option>
                 <option value="doubtful">Doubtful</option>
-                <option value="false">False</option>
+                <option value="false">Hallucination</option>
                 <option value="unreviewed">Unreviewed</option>
             </select>
             <select id="source-filter" class="filter-select">
-                <option value="">All Models</option>
+                <option value="">All AI Models</option>
             </select>
         </div>
         <div class="controls-row">
-            <button class="btn btn-secondary" onclick="exportData('csv')">Export CSV</button>
-            <button class="btn btn-secondary" onclick="exportData('json')">Export JSON</button>
+            <button class="btn btn-secondary" onclick="exportData('csv')">
+                <span>&#x21E9;</span> Export CSV
+            </button>
+            <button class="btn btn-secondary" onclick="exportData('json')">
+                <span>&#x21E9;</span> Export JSON
+            </button>
         </div>
+    </div>
+
+    <div id="bulk-bar" class="bulk-bar" style="display:none;">
+        <span class="bulk-bar-text"><strong id="bulk-count">0</strong> claims selected</span>
+        <select id="bulk-status" class="filter-select">
+            <option value="verified">Mark Verified</option>
+            <option value="doubtful">Mark Doubtful</option>
+            <option value="false">Mark Hallucination</option>
+            <option value="unreviewed">Mark Unreviewed</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="applyBulkStatus()">Apply</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearBulk()">Clear</button>
     </div>
 
     <div class="table-container">
         <table class="claims-table">
             <thead>
                 <tr>
-                    <th>Claim</th>
-                    <th>Model</th>
+                    <th style="width:36px;"><input type="checkbox" id="select-all" class="claim-checkbox" onchange="toggleSelectAll(this)" title="Select all visible claims"></th>
+                    <th>Claim Statement</th>
+                    <th>AI Model</th>
+                    <th>Confidence</th>
                     <th>Status</th>
                     <th>Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="claims-tbody">
-                <tr><td colspan="5" class="empty-state">Loading claims...</td></tr>
+                <tr><td colspan="7" class="empty-state">Loading your claims...</td></tr>
             </tbody>
         </table>
     </div>
 
     <div class="pagination" id="pagination">
-        <button class="btn btn-ghost" id="prev-btn" disabled onclick="changePage(-1)">Previous</button>
-        <span class="page-info" id="page-info">Page 1</span>
-        <button class="btn btn-ghost" id="next-btn" disabled onclick="changePage(1)">Next</button>
+        <button class="btn btn-ghost" id="prev-btn" disabled onclick="changePage(-1)">&larr; Previous</button>
+        <span class="page-info" id="page-info">Page —</span>
+        <button class="btn btn-ghost" id="next-btn" disabled onclick="changePage(1)">Next &rarr;</button>
     </div>
 </div>
 {% endblock %}
@@ -84,21 +102,31 @@
 <script>
 let currentPage = 1;
 const perPage = 20;
+let selectedClaims = new Set();
+let allClaims = [];
 
 function statusBadge(status) {
-    const map = { verified: 'green', doubtful: 'yellow', false: 'red', unreviewed: 'gray' };
-    return `<span class="badge badge-${map[status] || 'gray'}">${status}</span>`;
+    const labels = { verified: 'Verified', doubtful: 'Doubtful', false: 'Hallucination', unreviewed: 'Unreviewed' };
+    const colors = { verified: 'green', doubtful: 'yellow', false: 'red', unreviewed: 'gray' };
+    return `<span class="badge badge-${colors[status] || 'gray'}" data-tooltip="${labels[status] || status}">${labels[status] || status}</span>`;
+}
+
+function confidenceBar(conf) {
+    if (conf == null) return '';
+    const pct = Math.round(conf * 100);
+    const cls = pct >= 70 ? 'conf-high' : pct >= 40 ? 'conf-med' : 'conf-low';
+    return `<div class="confidence-bar"><div class="confidence-fill ${cls}" style="width:${pct}%"></div></div>
+            <span style="font-size:0.7rem;color:var(--text-muted);">${pct}%</span>`;
 }
 
 function statusOptions(current) {
-    const statuses = ['verified', 'doubtful', 'false', 'unreviewed'];
-    return statuses.map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`).join('');
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    const statuses = [
+        { value: 'verified', label: 'Verified' },
+        { value: 'doubtful', label: 'Doubtful' },
+        { value: 'false', label: 'Hallucination' },
+        { value: 'unreviewed', label: 'Unreviewed' },
+    ];
+    return statuses.map(s => `<option value="${s.value}" ${s.value === current ? 'selected' : ''}>${s.label}</option>`).join('');
 }
 
 async function loadClaims() {
@@ -112,59 +140,76 @@ async function loadClaims() {
 
     const res = await fetch(`${API_BASE}/claims?${params}`);
     const data = await res.json();
+    allClaims = data.claims;
 
     const tbody = document.getElementById('claims-tbody');
     if (data.claims.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No claims found. <a href="/add">Add your first response</a>.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+            No claims yet. <a href="/add">Paste your first AI response</a> to get started.
+        </td></tr>`;
     } else {
-        tbody.innerHTML = data.claims.map(c => `
+        tbody.innerHTML = data.claims.map(c => {
+            const isChecked = selectedClaims.has(c.id) ? 'checked' : '';
+            return `
             <tr>
-                <td class="claim-cell" title="${escapeHtml(c.claim_text)}">${escapeHtml(c.claim_text)}</td>
-                <td>${c.model_name || '—'}</td>
+                <td><input type="checkbox" class="claim-checkbox claim-select" data-id="${c.id}" ${isChecked} onchange="toggleClaim(${c.id}, this.checked)"></td>
+                <td class="claim-cell" title="${escapeHtml(c.claim_text)}">
+                    <a href="/claims/${c.id}" style="color:inherit;text-decoration:none;">${escapeHtml(c.claim_text)}</a>
+                </td>
+                <td>${c.model_name ? `<span data-tooltip="Model">${escapeHtml(c.model_name)}</span>` : '&mdash;'}</td>
+                <td style="min-width:80px;">${confidenceBar(c.confidence)}</td>
                 <td>${statusBadge(c.status)}</td>
-                <td class="date-cell">${new Date(c.created_at).toLocaleDateString()}</td>
+                <td class="date-cell">${formatDate(c.created_at)}</td>
                 <td>
-                    <select class="status-select" data-id="${c.id}" onchange="updateStatus(${c.id}, this.value)">
+                    <select class="status-select" data-id="${c.id}" onchange="updateStatus(${c.id}, this.value)" style="min-width:120px;">
                         ${statusOptions(c.status)}
                     </select>
-                    <button class="btn btn-sm btn-ghost" onclick="window.location='/claims/${c.id}'" title="View details">&#x2192;</button>
+                    <a href="/claims/${c.id}" class="btn btn-ghost btn-sm" title="View details">&rarr;</a>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     }
 
-    document.getElementById('page-info').textContent = `Page ${data.page} of ${Math.max(1, Math.ceil(data.total / perPage))}`;
+    document.getElementById('page-info').textContent = `Page ${data.page} of ${data.total_pages}`;
     document.getElementById('prev-btn').disabled = data.page <= 1;
-    document.getElementById('next-btn').disabled = data.page >= Math.ceil(data.total / perPage);
+    document.getElementById('next-btn').disabled = data.page >= data.total_pages;
+    document.getElementById('select-all').checked = false;
 }
 
 async function loadStats() {
     const res = await fetch(`${API_BASE}/sources/stats`);
-    const stats = await res.json();
-    document.getElementById('stat-total').textContent = stats.total;
-    document.getElementById('stat-verified').textContent = stats.verified;
-    document.getElementById('stat-doubtful').textContent = stats.doubtful;
-    document.getElementById('stat-false').textContent = stats.false_count;
-    document.getElementById('stat-unreviewed').textContent = stats.unreviewed;
+    const s = await res.json();
+    document.getElementById('stat-total').textContent = s.total;
+    document.getElementById('stat-verified').textContent = `${s.verified} (${s.verified_pct}%)`;
+    document.getElementById('stat-doubtful').textContent = s.doubtful;
+    document.getElementById('stat-false').textContent = `${s.false_count} (${s.false_pct}%)`;
+    document.getElementById('stat-unreviewed').textContent = s.unreviewed;
 
-    const byModel = stats.by_model;
+    const byModel = s.by_model;
     const grid = document.getElementById('model-stats-grid');
     const section = document.getElementById('model-stats');
     if (Object.keys(byModel).length > 0) {
         section.style.display = 'block';
-        grid.innerHTML = Object.entries(byModel).map(([model, s]) => `
+        grid.innerHTML = Object.entries(byModel).map(([model, m]) => {
+            const total = m.total || 1;
+            return `
             <div class="model-stat-card">
                 <div class="model-stat-name">${escapeHtml(model)}</div>
+                <div class="model-stat-sub">${m.total} total claims &middot; ${m.hallucination_rate}% hallucination rate</div>
                 <div class="model-stat-bar">
-                    <div class="bar-segment bar-verified" style="width:${s.total ? (s.verified / s.total * 100) : 0}%"></div>
-                    <div class="bar-segment bar-false" style="width:${s.total ? (s.false / s.total * 100) : 0}%"></div>
+                    <div class="bar-segment bar-verified" style="width:${(m.verified/total*100)}%"></div>
+                    <div class="bar-segment bar-doubtful" style="width:${(m.doubtful/total*100)}%"></div>
+                    <div class="bar-segment bar-false" style="width:${(m.false/total*100)}%"></div>
+                    <div class="bar-segment bar-unreviewed" style="width:${(m.unreviewed/total*100)}%"></div>
                 </div>
                 <div class="model-stat-nums">
-                    <span class="num-verified">${s.verified} verified</span>
-                    <span class="num-false">${s.false} false</span>
+                    <span class="num-verified">${m.verified} verified</span>
+                    <span class="num-doubtful">${m.doubtful} doubtful</span>
+                    <span class="num-false">${m.false} hallucination</span>
+                    <span class="num-unreviewed">${m.unreviewed} unreviewed</span>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     } else {
         section.style.display = 'none';
     }
@@ -180,13 +225,71 @@ async function loadSources() {
 }
 
 async function updateStatus(id, newStatus) {
-    await fetch(`${API_BASE}/claims/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+    try {
+        await fetch(`${API_BASE}/claims/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        showToast('Status updated successfully', 'toast-success');
+        loadClaims();
+        loadStats();
+    } catch (err) {
+        showToast('Failed to update status', 'toast-error');
+    }
+}
+
+function toggleClaim(id, checked) {
+    if (checked) selectedClaims.add(id);
+    else selectedClaims.delete(id);
+    updateBulkBar();
+}
+
+function toggleSelectAll(el) {
+    const checkboxes = document.querySelectorAll('.claim-select');
+    checkboxes.forEach(cb => {
+        cb.checked = el.checked;
+        if (el.checked) selectedClaims.add(parseInt(cb.dataset.id));
+        else selectedClaims.delete(parseInt(cb.dataset.id));
     });
-    loadClaims();
-    loadStats();
+    updateBulkBar();
+}
+
+function updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    const count = document.getElementById('bulk-count');
+    if (selectedClaims.size > 0) {
+        bar.style.display = 'flex';
+        count.textContent = selectedClaims.size;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function clearBulk() {
+    selectedClaims.clear();
+    document.querySelectorAll('.claim-select').forEach(cb => cb.checked = false);
+    document.getElementById('select-all').checked = false;
+    updateBulkBar();
+}
+
+async function applyBulkStatus() {
+    if (selectedClaims.size === 0) return;
+    const status = document.getElementById('bulk-status').value;
+    try {
+        const res = await fetch(`${API_BASE}/claims/bulk-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ claim_ids: Array.from(selectedClaims), status }),
+        });
+        const data = await res.json();
+        showToast(`${data.updated} claims marked as ${status}`, 'toast-success');
+        clearBulk();
+        loadClaims();
+        loadStats();
+    } catch (err) {
+        showToast('Bulk update failed', 'toast-error');
+    }
 }
 
 function changePage(delta) {
@@ -198,9 +301,14 @@ function exportData(format) {
     window.location.href = `${API_BASE}/claims/export?format=${format}`;
 }
 
-document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; loadClaims(); });
+document.getElementById('search-input').addEventListener('input', debounce(() => { currentPage = 1; loadClaims(); }, 300));
 document.getElementById('status-filter').addEventListener('change', () => { currentPage = 1; loadClaims(); });
 document.getElementById('source-filter').addEventListener('change', () => { currentPage = 1; loadClaims(); });
+
+function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
 
 loadClaims();
 loadStats();

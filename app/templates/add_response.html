@@ -1,53 +1,65 @@
 {% extends "base.html" %}
-{% block title %}Add Response{% endblock %}
+{% block title %}Analyze Response{% endblock %}
 {% block content %}
 <div class="form-container">
     <div class="page-header">
-        <h1 class="page-title">New AI Response</h1>
-        <p class="page-subtitle">Paste an AI-generated response to extract and track its factual claims</p>
+        <h1 class="page-title">Analyze AI Response</h1>
+        <p class="page-subtitle">Paste the output from any large language model and we will automatically extract verifiable factual claims</p>
     </div>
 
     <form id="extract-form" class="extract-form" onsubmit="handleSubmit(event)">
         <div class="form-group">
-            <label for="model-name" class="form-label">Model Name</label>
-            <input type="text" id="model-name" class="form-input" placeholder="e.g., GPT-4o, Claude 3.5 Sonnet" required>
+            <label for="model-name" class="form-label">AI Model</label>
+            <input type="text" id="model-name" class="form-input"
+                   placeholder="For example: GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro..."
+                   required autocomplete="off">
         </div>
+
         <div class="form-group">
-            <label for="prompt" class="form-label">Prompt Used <span class="label-optional">(optional)</span></label>
-            <textarea id="prompt" class="form-textarea form-textarea-sm" placeholder="The prompt that generated this response..."></textarea>
+            <label for="prompt" class="form-label">Original Prompt <span class="label-optional">&mdash; optional</span></label>
+            <textarea id="prompt" class="form-textarea form-textarea-sm"
+                      placeholder="The instruction or question you gave to the model..."></textarea>
         </div>
+
         <div class="form-group">
-            <label for="raw-text" class="form-label">AI Response Text</label>
-            <textarea id="raw-text" class="form-textarea" placeholder="Paste the full AI-generated response here..." required></textarea>
+            <label for="raw-text" class="form-label">AI Generated Response</label>
+            <textarea id="raw-text" class="form-textarea"
+                      placeholder="Paste the complete text response from the AI model here. The system will break it down into individual factual statements for verification..."
+                      required></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">Extract Claims</button>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+            <span id="submit-icon">&#x2699;</span>
+            <span id="submit-text">Extract Claims</span>
+        </button>
     </form>
 
     <div id="result-area" class="result-area" style="display:none;">
-        <h2 class="section-title" id="result-title"></h2>
-        <div class="result-list" id="result-list"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2 class="section-title" id="result-title" style="margin-bottom:0;"></h2>
+            <span id="result-rate" style="font-size:0.82rem;color:var(--text-muted);"></span>
+        </div>
+        <div id="result-list"></div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 async function handleSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
+    const icon = document.getElementById('submit-icon');
+    const text = document.getElementById('submit-text');
+
     btn.disabled = true;
-    btn.textContent = 'Extracting...';
+    icon.innerHTML = '&#x21bb;';
+    text.textContent = 'Extracting claims...';
 
     const body = {
         raw_text: document.getElementById('raw-text').value,
-        model_name: document.getElementById('model-name').value,
-        prompt: document.getElementById('prompt').value || null,
+        model_name: document.getElementById('model-name').value.trim(),
+        prompt: document.getElementById('prompt').value.trim() || null,
     };
 
     try {
@@ -56,30 +68,62 @@ async function handleSubmit(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         });
-        const data = await res.json();
 
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Extraction failed');
+        }
+
+        const data = await res.json();
         const area = document.getElementById('result-area');
         const title = document.getElementById('result-title');
         const list = document.getElementById('result-list');
+        const rate = document.getElementById('result-rate');
 
         area.style.display = 'block';
-        title.textContent = `${data.claims_extracted} claims extracted`;
 
-        list.innerHTML = data.claims.map(c =>
-            `<div class="result-claim">${escapeHtml(c.claim_text)}</div>`
-        ).join('');
+        if (data.claims_extracted === 0) {
+            title.textContent = 'No factual claims were detected';
+            rate.textContent = '';
+            list.innerHTML = `
+                <div class="empty-state">
+                    <p>The provided text does not appear to contain verifiable factual statements.</p>
+                    <p style="margin-top:8px;">Try pasting a more information-dense response with dates, numbers, names, or assertions.</p>
+                </div>`;
+        } else {
+            title.textContent = `${data.claims_extracted} claim${data.claims_extracted !== 1 ? 's' : ''} extracted`;
+            rate.textContent = 'All marked as unreviewed';
+            list.innerHTML = data.claims.map((c, i) =>
+                `<div class="result-claim">
+                    <strong style="color:var(--text-primary);">#${i + 1}</strong>
+                    ${escapeHtml(c.claim_text)}
+                </div>`
+            ).join('');
+        }
 
         list.innerHTML += `
-            <a href="/" class="btn btn-primary" style="margin-top:16px;">View in Dashboard</a>
+            <div style="margin-top:20px;display:flex;gap:10px;">
+                <a href="/" class="btn btn-primary">View in Dashboard</a>
+                <button class="btn btn-secondary" onclick="resetForm()">Analyze Another</button>
+            </div>
         `;
 
         document.getElementById('extract-form').reset();
+        showToast(`${data.claims_extracted} claims extracted successfully`, 'toast-success');
     } catch (err) {
-        alert('Error extracting claims. Please try again.');
+        showToast(err.message || 'Something went wrong. Please try again.', 'toast-error');
     }
 
     btn.disabled = false;
-    btn.textContent = 'Extract Claims';
+    icon.innerHTML = '&#x2699;';
+    text.textContent = 'Extract Claims';
+}
+
+function resetForm() {
+    document.getElementById('result-area').style.display = 'none';
+    document.getElementById('extract-form').reset();
+    document.getElementById('model-name').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
 {% endblock %}
