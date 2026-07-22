@@ -28,6 +28,7 @@ def list_claims(
         query = query.filter(Claim.source_id == source_id)
 
     total = query.count()
+    total_pages = (total + per_page - 1) // per_page
     claims = query.order_by(Claim.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
 
     result = []
@@ -36,7 +37,7 @@ def list_claims(
         cd.model_name = c.source.model_name if c.source else None
         result.append(cd)
 
-    return ClaimsResponse(claims=result, total=total, page=page, per_page=per_page)
+    return ClaimsResponse(claims=result, total=total, page=page, per_page=per_page, total_pages=total_pages)
 
 
 @router.post("", response_model=ClaimOut, status_code=201)

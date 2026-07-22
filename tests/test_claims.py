@@ -18,7 +18,7 @@ class TestClaimsAPI:
             "raw_text": "",
             "model_name": "GPT-4o",
         })
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     def test_list_claims_paginated(self, client):
         response = client.get("/api/claims?page=1&per_page=10")
@@ -53,7 +53,7 @@ class TestClaimsAPI:
         claim_id = create_resp.json()["id"]
 
         response = client.patch(f"/api/claims/{claim_id}/status", json={"status": "invalid_status"})
-        assert response.status_code == 400
+        assert response.status_code == 422
 
     def test_delete_claim(self, client):
         create_resp = client.post("/api/claims", json={"claim_text": "Temporary claim."})
