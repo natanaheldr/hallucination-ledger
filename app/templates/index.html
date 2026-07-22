@@ -4,7 +4,7 @@
 <div class="dashboard">
     <div class="page-header">
         <h1 class="page-title">Claim Ledger</h1>
-        <p class="page-subtitle">Track, verify, and analyze factual claims extracted from AI model outputs</p>
+        <p class="page-subtitle">Every factual statement extracted from AI outputs, organized and ready for your verification</p>
     </div>
 
     <div class="stats-grid" id="stats-cards">
@@ -147,8 +147,8 @@ async function loadClaims() {
     if (data.claims.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
             <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                <span>No claims yet. <a href="/add">Paste your first AI response</a> to get started.</span>
-                <button class="btn btn-secondary btn-sm" onclick="loadDemoData()">Load demo data for a preview</button>
+                <span>Your ledger is empty. <a href="/add">Paste an AI response</a> to start building it.</span>
+                <button class="btn btn-secondary btn-sm" onclick="loadDemoData()">Or load sample data for a quick tour</button>
             </div>
         </td></tr>`;
     } else {

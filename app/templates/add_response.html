@@ -3,8 +3,8 @@
 {% block content %}
 <div class="form-container">
     <div class="page-header">
-        <h1 class="page-title">Analyze AI Response</h1>
-        <p class="page-subtitle">Paste the output from any large language model and we will automatically extract verifiable factual claims</p>
+        <h1 class="page-title">Analyze an AI Response</h1>
+        <p class="page-subtitle">Paste what a language model told you. We will pull out every factual statement so you can check each one.</p>
     </div>
 
     <form id="extract-form" class="extract-form" onsubmit="handleSubmit(event)">
@@ -18,7 +18,7 @@
         <div class="form-group">
             <label for="prompt" class="form-label">Original Prompt <span class="label-optional">&mdash; optional</span></label>
             <textarea id="prompt" class="form-textarea form-textarea-sm"
-                      placeholder="The instruction or question you gave to the model..."></textarea>
+                      placeholder="The question or instruction you gave the model..."></textarea>
         </div>
 
         <div class="form-group">
@@ -87,8 +87,8 @@ async function handleSubmit(e) {
             rate.textContent = '';
             list.innerHTML = `
                 <div class="empty-state">
-                    <p>The provided text does not appear to contain verifiable factual statements.</p>
-                    <p style="margin-top:8px;">Try pasting a more information-dense response with dates, numbers, names, or assertions.</p>
+                    <p>We didn't find any verifiable factual statements in that text.</p>
+                    <p style="margin-top:8px;">Try pasting something with dates, numbers, names, or concrete assertions — those are easier to fact-check.</p>
                 </div>`;
         } else {
             title.textContent = `${data.claims_extracted} claim${data.claims_extracted !== 1 ? 's' : ''} extracted`;

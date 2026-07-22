@@ -5,7 +5,7 @@
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
             <h1 class="page-title">Claim #{{ claim_id }}</h1>
-            <p class="page-subtitle">Detailed claim information and audit trail</p>
+            <p class="page-subtitle">Review this claim's details and see how its verification status has changed over time</p>
         </div>
         <a href="/" class="btn btn-ghost">&larr; Back to Dashboard</a>
     </div>
@@ -40,7 +40,7 @@ async function loadDetail() {
         if (!claim) {
             document.getElementById('claim-detail').innerHTML = `
                 <div class="detail-card">
-                    <p class="empty-state">This claim could not be found. It may have been deleted.</p>
+                    <p class="empty-state">This claim could not be found. It may have been removed.</p>
                     <a href="/" class="btn btn-primary">Return to Dashboard</a>
                 </div>`;
             return;
@@ -100,7 +100,7 @@ async function loadDetail() {
                 </div>
 
                 <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
-                    <h2 class="section-title">Status Change History</h2>
+                    <h2 class="section-title">How this claim's status has changed</h2>
                     <div id="audit-list">${auditsHtml}</div>
                 </div>
             </div>
@@ -119,7 +119,7 @@ async function loadAudits() {
         const audits = await res.json();
         const container = document.getElementById('audit-list');
         if (audits.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No status changes recorded yet.</p>';
+            container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No status changes yet — this claim hasn't been reviewed.</p>';
             return;
         }
         container.innerHTML = audits.map(a => `
