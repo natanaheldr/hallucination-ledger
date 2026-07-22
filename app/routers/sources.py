@@ -8,42 +8,6 @@ from app.schemas import SourceCreate, SourceOut
 router = APIRouter(prefix="/api/sources", tags=["sources"])
 
 
-@router.get("", response_model=list[SourceOut])
-def list_sources(db: Session = Depends(get_db)):
-    return db.query(ResponseSource).order_by(ResponseSource.created_at.desc()).all()
-
-
-@router.post("", response_model=SourceOut, status_code=201)
-def create_source(body: SourceCreate, db: Session = Depends(get_db)):
-    source = ResponseSource(
-        model_name=body.model_name,
-        prompt=body.prompt,
-        raw_text=body.raw_text,
-    )
-    db.add(source)
-    db.commit()
-    db.refresh(source)
-    return source
-
-
-@router.get("/{source_id}", response_model=SourceOut)
-def get_source(source_id: int, db: Session = Depends(get_db)):
-    source = db.query(ResponseSource).filter(ResponseSource.id == source_id).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
-    return source
-
-
-@router.delete("/{source_id}")
-def delete_source(source_id: int, db: Session = Depends(get_db)):
-    source = db.query(ResponseSource).filter(ResponseSource.id == source_id).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
-    db.delete(source)
-    db.commit()
-    return {"detail": "Source and all its claims deleted"}
-
-
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
     total = db.query(Claim).count()
@@ -84,3 +48,39 @@ def get_stats(db: Session = Depends(get_db)):
         "false_pct": false_pct,
         "by_model": by_model,
     }
+
+
+@router.get("", response_model=list[SourceOut])
+def list_sources(db: Session = Depends(get_db)):
+    return db.query(ResponseSource).order_by(ResponseSource.created_at.desc()).all()
+
+
+@router.post("", response_model=SourceOut, status_code=201)
+def create_source(body: SourceCreate, db: Session = Depends(get_db)):
+    source = ResponseSource(
+        model_name=body.model_name,
+        prompt=body.prompt,
+        raw_text=body.raw_text,
+    )
+    db.add(source)
+    db.commit()
+    db.refresh(source)
+    return source
+
+
+@router.get("/{source_id}", response_model=SourceOut)
+def get_source(source_id: int, db: Session = Depends(get_db)):
+    source = db.query(ResponseSource).filter(ResponseSource.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+    return source
+
+
+@router.delete("/{source_id}")
+def delete_source(source_id: int, db: Session = Depends(get_db)):
+    source = db.query(ResponseSource).filter(ResponseSource.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+    db.delete(source)
+    db.commit()
+    return {"detail": "Source and all its claims deleted"}
