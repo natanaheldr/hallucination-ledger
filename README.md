@@ -1,59 +1,30 @@
 <div align="center">
-
-![Python](https://img.shields.io/badge/python-3.11+-6b4de6?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/fastapi-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-28%20passed-success?style=for-the-badge&logo=pytest&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blueviolet?style=for-the-badge)
-![Status](https://img.shields.io/badge/status-active-brightgreen?style=for-the-badge)
+  <img src="https://img.shields.io/badge/python-3.11+-6b4de6?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/fastapi-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/tests-28%20passed-success?style=flat-square&logo=pytest&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/license-MIT-blueviolet?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/release-v0.2.0-7c5cfc?style=flat-square" alt="Release">
+</div>
 
 <br>
 
 ```
-  ╔══════════════════════════════════════════════════════════════╗
-  ║  ◆  H A L L U C I N A T I O N   L E D G E R                ║
-  ║     Extract · Track · Verify · Export                       ║
-  ╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+║  ◆  H A L L U C I N A T I O N   L E D G E R            ║
+║     Extract · Track · Verify · Export                   ║
+╚══════════════════════════════════════════════════════════╝
 ```
 
-<p>
-  <strong>A forensic toolkit for auditing factual claims in AI-generated text.</strong><br>
-  <sub>Paste LLM output → get atomic claims → classify each one → know which models lie.</sub>
+<p align="center">
+  <strong>Paste LLM output → get atomic claims → classify each one → know which models lie.</strong><br>
+  <sub>A forensic toolkit for auditing factual claims in AI-generated text. AI Safety · Day 002.</sub>
 </p>
-
-</div>
 
 ---
 
-## The Problem
+## Why
 
-AI models don't admit when they don't know something. Instead, they fabricate — with complete confidence. Dates that never happened, statistics pulled from nowhere, people who don't exist, events that never occurred. **Hallucination** is the industry's polite word for it.
-
-If you use AI outputs in research, journalism, legal work, medicine, or any domain where facts matter, you need to know *which claims hold up and which don't*.
-
-## What This Tool Does
-
-<div align="center">
-
-| Step | Action |
-|:----:|--------|
-| **1** | Paste an AI response into the analyzer |
-| **2** | The engine extracts every verifiable factual claim |
-| **3** | Each claim is scored for factual density (confidence) |
-| **4** | You classify each claim: verified, doubtful, or hallucination |
-| **5** | The dashboard reveals which models are most (and least) reliable |
-
-</div>
-
-### Core Capabilities
-
-- **Heuristic Claim Extraction** — Detects sentences containing dates, statistics, proper names, superlatives, citations, and other markers of factual assertions. Not just regex — multi-pattern scoring.
-- **Confidence Scoring** — Every extracted claim receives a numerical score (0.0–1.0) based on how many factual indicators it carries. Higher score = more specific, more verifiable.
-- **Four-way Classification** — `verified` · `doubtful` · `false` (hallucination) · `unreviewed`. Each status change is logged in a permanent audit trail.
-- **Bulk Operations** — Select multiple claims with checkboxes and update their status in one click. Sort, filter, and search across all claims.
-- **Per-model Analytics** — Visual breakdown of hallucination rates per AI model. See at a glance whether GPT-4o, Claude, or Gemini is giving you the most fabrications.
-- **Full Export** — Download your entire ledger as CSV for spreadsheet analysis or JSON for programmatic use.
-- **Keyboard Shortcuts** — `F` to search, `N` for new analysis, arrow keys to paginate, `Ctrl+E`/`Ctrl+J` to export.
-- **Dark & Light Themes** — Toggle between cinematic dark mode and clean light mode, persisted across sessions.
+AI models fabricate with complete confidence — wrong dates, invented statistics, nonexistent people. If you rely on AI outputs where facts matter, you need to know which claims hold up. This tool gives you that answer.
 
 ---
 
@@ -66,138 +37,151 @@ pip install -r requirements.txt
 python run.py
 ```
 
-Open **[http://localhost:8000](http://localhost:8000)** — click **"Load demo data"** to see the dashboard with 25 pre-classified claims from 5 AI models immediately.
+Open **http://localhost:8000** → click **"Load demo data"** to see the dashboard populated instantly.
 
 ---
 
-## How It Looks
+## How It Works
 
-> The dashboard presents a dark/light themed interface with:
-> - **5 stat cards** at the top showing total, verified, doubtful, hallucination, and unreviewed counts with percentages
-> - **Per-model breakdown bars** showing the proportion of verified vs hallucinated claims per AI model
-> - **Search, filter, and bulk-select** controls in a unified toolbar
-> - **Paginated claims table** with inline status selectors, confidence indicators, and one-click detail views
-> - **Toast notifications** for every action (status updates, bulk operations, exports)
-> - **Audit trail timeline** on each claim's detail page showing every status change
+1. **Paste** an AI response → the engine extracts every verifiable factual statement
+2. **Score** — each claim gets a confidence rating based on factual density
+3. **Classify** — mark each as `verified`, `doubtful`, or `false` (hallucination)
+4. **Analyze** — the dashboard shows which models hallucinate the most
+5. **Export** — download your ledger as CSV or JSON
+
+---
+
+## Features
+
+| Category | Details |
+|----------|---------|
+| **Claim Extraction** | 15 heuristic patterns detect dates, numbers, proper names, superlatives, citations |
+| **Confidence Score** | 0.0–1.0 rating per claim based on factual indicator density |
+| **Classification** | 4 statuses: verified · doubtful · hallucination · unreviewed |
+| **Audit Trail** | Every status change logged with timestamp — full history per claim |
+| **Bulk Operations** | Select multiple claims, reclassify all at once |
+| **Per-Model Stats** | Hallucination rate per AI model with visual breakdown bars |
+| **Search & Filter** | Full-text search + filter by status or model |
+| **Export** | CSV for spreadsheets, JSON for programmatic use |
+| **Themes** | Dark & light mode, persisted across sessions |
+| **Shortcuts** | `F` search, `N` new, arrows paginate, `Ctrl+E` CSV, `Ctrl+J` JSON |
 
 ---
 
 ## API Reference
 
+<details>
+<summary><strong>17 endpoints — click to expand</strong></summary>
+<br>
+
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `GET` | `/` | Dashboard with full interactive claims table |
-| `GET` | `/add` | AI response submission and analysis form |
-| `GET` | `/claims/{id}` | Detailed view of a single claim with audit trail |
-| `GET` | `/api/claims` | List claims (paginated, filtered by `status`, `search`, `source_id`) |
-| `POST` | `/api/claims` | Create a single claim manually |
-| `POST` | `/api/claims/extract` | Paste AI response text, auto-extract all factual claims |
-| `PATCH` | `/api/claims/{id}/status` | Update status of one claim (creates audit entry) |
-| `POST` | `/api/claims/bulk-status` | Batch-update status for multiple claims at once |
-| `GET` | `/api/claims/{id}/audits` | Retrieve the complete audit history for a claim |
-| `DELETE` | `/api/claims/{id}` | Permanently remove a claim |
+| `GET` | `/` | Dashboard |
+| `GET` | `/add` | Submission form |
+| `GET` | `/claims/{id}` | Claim detail + audit trail |
+| `GET` | `/api/claims` | List claims (paginated, `status`, `search`, `source_id`) |
+| `POST` | `/api/claims` | Create claim |
+| `POST` | `/api/claims/extract` | Paste response → auto-extract claims |
+| `PATCH` | `/api/claims/{id}/status` | Update status (creates audit entry) |
+| `POST` | `/api/claims/bulk-status` | Batch update multiple claims |
+| `GET` | `/api/claims/{id}/audits` | Full status change history |
+| `DELETE` | `/api/claims/{id}` | Remove claim |
 | `GET` | `/api/claims/export?format=csv\|json` | Export filtered claims |
-| `GET` | `/api/sources` | List all AI model sources |
-| `POST` | `/api/sources` | Register a new AI model source |
-| `GET` | `/api/sources/{id}` | Get details about a specific source |
-| `DELETE` | `/api/sources/{id}` | Delete a source and all its associated claims |
-| `GET` | `/api/sources/stats` | Aggregate statistics with per-model hallucination rates |
-| `GET` | `/api/seed-demo` | Populate the database with 25 realistic demo claims |
+| `GET` | `/api/sources` | List AI model sources |
+| `POST` | `/api/sources` | Register new source |
+| `GET` | `/api/sources/{id}` | Source detail |
+| `DELETE` | `/api/sources/{id}` | Delete source + claims |
+| `GET` | `/api/sources/stats` | Per-model statistics + hallucination rates |
+| `GET` | `/api/seed-demo` | Load 25 demo claims from 5 real AI models |
 
----
-
-## Project Structure
-
-```
-hallucination-ledger/
-├── app/
-│   ├── main.py                     # FastAPI application entry point
-│   ├── database.py                 # SQLAlchemy engine, session, test helpers
-│   ├── models.py                   # ORM models: Claim, ResponseSource, ClaimAudit
-│   ├── schemas.py                  # Pydantic validation with field validators
-│   ├── seed_demo.py                # Demo data seeder (5 models, 25 claims)
-│   ├── routers/
-│   │   ├── claims.py               # /api/claims — CRUD, extract, bulk, export, audits
-│   │   └── sources.py              # /api/sources — CRUD, per-model statistics
-│   ├── services/
-│   │   ├── claim_extractor.py      # Multi-pattern heuristic claim detection engine
-│   │   └── export_service.py       # CSV and JSON serialization formatters
-│   ├── static/
-│   │   └── style.css               # Complete CSS with dark/light themes
-│   └── templates/
-│       ├── base.html               # Shared layout, nav, theme toggle, shortcuts
-│       ├── index.html              # Dashboard with bulk operations and interactive stats
-│       ├── add_response.html       # AI response submission with extraction feedback
-│       └── claim_detail.html       # Single claim view with audit history timeline
-├── tests/
-│   ├── conftest.py                 # Pytest fixtures (in-memory SQLite, TestClient)
-│   ├── test_claims.py              # API endpoint tests (18 tests)
-│   ├── test_export.py              # Export service unit tests
-│   └── test_extractor.py           # Claim extraction unit tests
-├── .github/workflows/ci.yml        # Manual + PR CI pipeline (lint + tests)
-├── requirements.txt                # Python dependencies
-├── run.py                          # Uvicorn launcher
-└── README.md                       # You are here
-```
+</details>
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Language | **Python 3.11+** | Modern typing, pattern matching, performance |
-| Framework | **FastAPI** | Auto-generated OpenAPI docs, async support, validation |
-| Server | **Uvicorn** | Lightning-fast ASGI server with hot reload |
-| Database | **SQLite** + **SQLAlchemy 2.0** | Zero-config persistent storage with full ORM |
-| Validation | **Pydantic v2** | Type-safe request/response models with validators |
-| Frontend | **Jinja2** + **Vanilla JS** | No framework overhead, server-rendered with progressive enhancement |
-| Styling | **Custom CSS** | CSS custom properties for theming, zero dependencies |
-| Testing | **pytest** | 28 tests, in-memory database, full API coverage |
-| Linting | **ruff** | Blazing-fast Python linter written in Rust |
+| Layer | Choice |
+|-------|--------|
+| Language | Python 3.11+ |
+| Framework | FastAPI + Uvicorn |
+| Database | SQLite + SQLAlchemy 2.0 ORM |
+| Validation | Pydantic v2 |
+| Frontend | Jinja2 + Vanilla JS · zero framework overhead |
+| CSS | Custom properties · dark/light themes · responsive |
+| Testing | pytest · 28 tests · in-memory SQLite |
+| Linting | ruff |
+
+---
+
+## Project Layout
+
+<details>
+<summary><strong>File tree — click to expand</strong></summary>
+<br>
+
+```
+hallucination-ledger/
+├── app/
+│   ├── main.py                  FastAPI entry point
+│   ├── database.py              SQLAlchemy engine & sessions
+│   ├── models.py                ORM: Claim, ResponseSource, ClaimAudit
+│   ├── schemas.py               Pydantic models with validators
+│   ├── seed_demo.py             25 demo claims from 5 AI models
+│   ├── routers/
+│   │   ├── claims.py            CRUD, extract, bulk, export, audits
+│   │   └── sources.py           CRUD, per-model statistics
+│   ├── services/
+│   │   ├── claim_extractor.py   Multi-pattern heuristic engine
+│   │   └── export_service.py    CSV & JSON formatters
+│   ├── static/
+│   │   └── style.css            Full theme system
+│   └── templates/
+│       ├── base.html            Shell, nav, theme toggle
+│       ├── index.html           Dashboard + bulk ops
+│       ├── add_response.html    Submission form
+│       └── claim_detail.html    Claim view + audit timeline
+├── tests/
+│   ├── conftest.py              In-memory SQLite fixtures
+│   ├── test_claims.py           18 API tests
+│   ├── test_export.py           Export unit tests
+│   └── test_extractor.py        Extraction unit tests
+├── .github/workflows/ci.yml     CI pipeline
+├── requirements.txt
+├── run.py
+├── CHANGELOG.md
+└── README.md
+```
+
+</details>
 
 ---
 
 ## Testing
 
 ```bash
-# Run all 28 tests
-pytest -v
-
-# Run with coverage
-pip install pytest-cov
-pytest --cov=app --cov-report=term-missing
-
-# Lint all Python files
-ruff check .
+pytest -v                   # 28 tests, all pass
+ruff check .                # zero lint errors
 ```
 
-All tests use an in-memory SQLite database — no external setup, no configuration, no cleanup needed.
+No database setup needed — tests use in-memory SQLite.
 
 ---
 
 ## Contributing
 
-Contributions are welcome. Here is how:
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/my-improvement`
-3. **Write** tests for your changes
-4. **Run** the full suite: `ruff check . && pytest -v`
-5. **Commit** with clear, descriptive messages
-6. **Open** a pull request against `main`
-
-Keep the PR focused. Large, multi-feature PRs are harder to review.
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/your-idea`
+3. Write tests, run `ruff check . && pytest -v`
+4. Open a PR against `main`
 
 ---
 
 ## License
 
-Released under the [MIT License](LICENSE). Use it, modify it, ship it, learn from it — just keep the attribution.
+MIT — use freely, attribution appreciated.
 
----
+<br>
 
-<div align="center">
-  <br>
-  <sub>Day 002 of the AI Safety Toolkit · Built for transparency in the age of generated text.</sub>
-</div>
+<p align="center">
+  <sub>Built for transparency in the age of generated text.</sub>
+</p>
