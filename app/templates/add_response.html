@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Add Response{% endblock %}
+{% block content %}
+<div class="form-container">
+    <div class="page-header">
+        <h1 class="page-title">New AI Response</h1>
+        <p class="page-subtitle">Paste an AI-generated response to extract and track its factual claims</p>
+    </div>
+
+    <form id="extract-form" class="extract-form" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+            <label for="model-name" class="form-label">Model Name</label>
+            <input type="text" id="model-name" class="form-input" placeholder="e.g., GPT-4o, Claude 3.5 Sonnet" required>
+        </div>
+        <div class="form-group">
+            <label for="prompt" class="form-label">Prompt Used <span class="label-optional">(optional)</span></label>
+            <textarea id="prompt" class="form-textarea form-textarea-sm" placeholder="The prompt that generated this response..."></textarea>
+        </div>
+        <div class="form-group">
+            <label for="raw-text" class="form-label">AI Response Text</label>
+            <textarea id="raw-text" class="form-textarea" placeholder="Paste the full AI-generated response here..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">Extract Claims</button>
+    </form>
+
+    <div id="result-area" class="result-area" style="display:none;">
+        <h2 class="section-title" id="result-title"></h2>
+        <div class="result-list" id="result-list"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Extracting...';
+
+    const body = {
+        raw_text: document.getElementById('raw-text').value,
+        model_name: document.getElementById('model-name').value,
+        prompt: document.getElementById('prompt').value || null,
+    };
+
+    try {
+        const res = await fetch(`${API_BASE}/claims/extract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        const area = document.getElementById('result-area');
+        const title = document.getElementById('result-title');
+        const list = document.getElementById('result-list');
+
+        area.style.display = 'block';
+        title.textContent = `${data.claims_extracted} claims extracted`;
+
+        list.innerHTML = data.claims.map(c =>
+            `<div class="result-claim">${escapeHtml(c.claim_text)}</div>`
+        ).join('');
+
+        list.innerHTML += `
+            <a href="/" class="btn btn-primary" style="margin-top:16px;">View in Dashboard</a>
+        `;
+
+        document.getElementById('extract-form').reset();
+    } catch (err) {
+        alert('Error extracting claims. Please try again.');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Extract Claims';
+}
+</script>
+{% endblock %}

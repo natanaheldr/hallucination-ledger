@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <div class="page-header">
+        <h1 class="page-title">Claim Ledger</h1>
+        <p class="page-subtitle">Track and verify factual claims from AI-generated text</p>
+    </div>
+
+    <div class="stats-grid" id="stats-cards">
+        <div class="stat-card stat-total">
+            <div class="stat-number" id="stat-total">—</div>
+            <div class="stat-label">Total Claims</div>
+        </div>
+        <div class="stat-card stat-verified">
+            <div class="stat-number" id="stat-verified">—</div>
+            <div class="stat-label">Verified</div>
+        </div>
+        <div class="stat-card stat-doubtful">
+            <div class="stat-number" id="stat-doubtful">—</div>
+            <div class="stat-label">Doubtful</div>
+        </div>
+        <div class="stat-card stat-false">
+            <div class="stat-number" id="stat-false">—</div>
+            <div class="stat-label">False</div>
+        </div>
+        <div class="stat-card stat-unreviewed">
+            <div class="stat-number" id="stat-unreviewed">—</div>
+            <div class="stat-label">Unreviewed</div>
+        </div>
+    </div>
+
+    <div class="model-stats" id="model-stats" style="display:none;">
+        <h2 class="section-title">By Model</h2>
+        <div class="model-stats-grid" id="model-stats-grid"></div>
+    </div>
+
+    <div class="controls-bar">
+        <div class="controls-row">
+            <input type="text" id="search-input" class="search-input" placeholder="Search claims...">
+            <select id="status-filter" class="filter-select">
+                <option value="">All Statuses</option>
+                <option value="verified">Verified</option>
+                <option value="doubtful">Doubtful</option>
+                <option value="false">False</option>
+                <option value="unreviewed">Unreviewed</option>
+            </select>
+            <select id="source-filter" class="filter-select">
+                <option value="">All Models</option>
+            </select>
+        </div>
+        <div class="controls-row">
+            <button class="btn btn-secondary" onclick="exportData('csv')">Export CSV</button>
+            <button class="btn btn-secondary" onclick="exportData('json')">Export JSON</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="claims-table">
+            <thead>
+                <tr>
+                    <th>Claim</th>
+                    <th>Model</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="claims-tbody">
+                <tr><td colspan="5" class="empty-state">Loading claims...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="pagination">
+        <button class="btn btn-ghost" id="prev-btn" disabled onclick="changePage(-1)">Previous</button>
+        <span class="page-info" id="page-info">Page 1</span>
+        <button class="btn btn-ghost" id="next-btn" disabled onclick="changePage(1)">Next</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+const perPage = 20;
+
+function statusBadge(status) {
+    const map = { verified: 'green', doubtful: 'yellow', false: 'red', unreviewed: 'gray' };
+    return `<span class="badge badge-${map[status] || 'gray'}">${status}</span>`;
+}
+
+function statusOptions(current) {
+    const statuses = ['verified', 'doubtful', 'false', 'unreviewed'];
+    return statuses.map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function loadClaims() {
+    const search = document.getElementById('search-input').value;
+    const status = document.getElementById('status-filter').value;
+    const sourceId = document.getElementById('source-filter').value;
+    const params = new URLSearchParams({ page: currentPage, per_page: perPage });
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+    if (sourceId) params.set('source_id', sourceId);
+
+    const res = await fetch(`${API_BASE}/claims?${params}`);
+    const data = await res.json();
+
+    const tbody = document.getElementById('claims-tbody');
+    if (data.claims.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No claims found. <a href="/add">Add your first response</a>.</td></tr>';
+    } else {
+        tbody.innerHTML = data.claims.map(c => `
+            <tr>
+                <td class="claim-cell" title="${escapeHtml(c.claim_text)}">${escapeHtml(c.claim_text)}</td>
+                <td>${c.model_name || '—'}</td>
+                <td>${statusBadge(c.status)}</td>
+                <td class="date-cell">${new Date(c.created_at).toLocaleDateString()}</td>
+                <td>
+                    <select class="status-select" data-id="${c.id}" onchange="updateStatus(${c.id}, this.value)">
+                        ${statusOptions(c.status)}
+                    </select>
+                    <button class="btn btn-sm btn-ghost" onclick="window.location='/claims/${c.id}'" title="View details">&#x2192;</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('page-info').textContent = `Page ${data.page} of ${Math.max(1, Math.ceil(data.total / perPage))}`;
+    document.getElementById('prev-btn').disabled = data.page <= 1;
+    document.getElementById('next-btn').disabled = data.page >= Math.ceil(data.total / perPage);
+}
+
+async function loadStats() {
+    const res = await fetch(`${API_BASE}/sources/stats`);
+    const stats = await res.json();
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-verified').textContent = stats.verified;
+    document.getElementById('stat-doubtful').textContent = stats.doubtful;
+    document.getElementById('stat-false').textContent = stats.false_count;
+    document.getElementById('stat-unreviewed').textContent = stats.unreviewed;
+
+    const byModel = stats.by_model;
+    const grid = document.getElementById('model-stats-grid');
+    const section = document.getElementById('model-stats');
+    if (Object.keys(byModel).length > 0) {
+        section.style.display = 'block';
+        grid.innerHTML = Object.entries(byModel).map(([model, s]) => `
+            <div class="model-stat-card">
+                <div class="model-stat-name">${escapeHtml(model)}</div>
+                <div class="model-stat-bar">
+                    <div class="bar-segment bar-verified" style="width:${s.total ? (s.verified / s.total * 100) : 0}%"></div>
+                    <div class="bar-segment bar-false" style="width:${s.total ? (s.false / s.total * 100) : 0}%"></div>
+                </div>
+                <div class="model-stat-nums">
+                    <span class="num-verified">${s.verified} verified</span>
+                    <span class="num-false">${s.false} false</span>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+async function loadSources() {
+    const res = await fetch(`${API_BASE}/sources`);
+    const sources = await res.json();
+    const select = document.getElementById('source-filter');
+    sources.forEach(s => {
+        select.innerHTML += `<option value="${s.id}">${escapeHtml(s.model_name)}</option>`;
+    });
+}
+
+async function updateStatus(id, newStatus) {
+    await fetch(`${API_BASE}/claims/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+    });
+    loadClaims();
+    loadStats();
+}
+
+function changePage(delta) {
+    currentPage += delta;
+    loadClaims();
+}
+
+function exportData(format) {
+    window.location.href = `${API_BASE}/claims/export?format=${format}`;
+}
+
+document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; loadClaims(); });
+document.getElementById('status-filter').addEventListener('change', () => { currentPage = 1; loadClaims(); });
+document.getElementById('source-filter').addEventListener('change', () => { currentPage = 1; loadClaims(); });
+
+loadClaims();
+loadStats();
+loadSources();
+</script>
+{% endblock %}
